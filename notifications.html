@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="head"><h1>Notifications</h1>{% if VAPID_PUBLIC %}<button class="btn gold" onclick="SSM.enablePush()">Get these on my phone</button>{% endif %}</div>
+<div class="card"><ul class="feed">{% for n in rows %}<li><span class="t small">{{ n.ts.strftime('%H:%M') }}<br><span class="muted" style="font-weight:400">{{ n.ts.strftime('%d/%m') }}</span></span>
+<div><a href="{{ n.url or '#' }}"><b>{{ n.title }}</b></a><div class="small muted">{{ n.body }}</div></div><span class="pill {{ {'sale':'green','stock':'red','warning':'gold','daily':'blue'}.get(n.kind,'grey') }}">{{ n.kind }}</span></li>
+{% else %}<li class="muted">No notifications yet.</li>{% endfor %}</ul></div>
+{% endblock %}

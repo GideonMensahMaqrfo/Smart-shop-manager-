@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="head">
+  <div><h1>Hello, {{ (current_user.name or current_user.username).split(' ')[0] }}</h1>
+  <div class="muted">{{ now().strftime('%A, %d %B %Y') }} · updates by itself every 10 seconds</div></div>
+  <div class="row" style="flex:0">
+    {% if current_user.can('sell') %}<a class="btn green" href="{{ url_for('pos') }}">Start selling</a>{% endif %}
+    {% if current_user.can('manage_items') %}<a class="btn ghost" href="{{ url_for('item_form') }}">+ Item</a>{% endif %}
+  </div>
+</div>
+{% if current_user.can('alerts') and VAPID_PUBLIC %}
+<div class="card noprint" id="pushCard" style="margin-bottom:14px;display:none;border-left:4px solid var(--gold)">
+  <b>Get alerts on this phone</b> <span class="muted small">when a sale happens, stock runs low, or the day closes.</span>
+  <button class="btn gold sm" style="margin-left:8px" onclick="SSM.enablePush()">Turn on notifications</button>
+</div>{% endif %}
+
+<div class="grid g4">
+  <div class="card stat" style="--c:var(--green)"><div class="lbl">Today's sales</div><div class="val" id="todayTotal">{{ money(d.today.total) }}</div><div class="sub"><span id="todayN">{{ d.today.n }}</span> sale(s)</div></div>
+  {% if current_user.can('view_profit') %}<div class="card stat" style="--c:var(--gold)"><div class="lbl">Profit today</div><div class="val" id="todayProfit">{{ money(d.today.profit) }}</div><div class="sub">This month: {{ money(d.month.profit) }}</div></div>{% endif %}
+  {% if current_user.can('view_sales') %}<div class="card stat"><div class="lbl">This week</div><div class="val">{{ money(d.week.total) }}</div><div class="sub">{{ d.week.n }} sales since Monday</div></div>
+  <div class="card stat"><div class="lbl">This month</div><div class="val">{{ money(d.month.total) }}</div><div class="sub">{{ d.month.n }} sales</div></div>{% endif %}
+  <div class="card stat" style="--c:var(--red)"><div class="lbl">Low stock</div><div class="val" style="color:{{ 'var(--red)' if low else 'inherit' }}">{{ low|length }}</div><div class="sub">{{ d.n_items }} items · {{ '{:,}'.format(d.pieces) }} pieces</div></div>
+  {% if current_user.can('debts') %}<div class="card stat" style="--c:var(--orange)"><div class="lbl">Customers owe you</div><div class="val">{{ money(d.debt) }}</div><div class="sub"><a href="{{ url_for('debts') }}">Open debt book</a></div></div>{% endif %}
+</div>
+
+{% if current_user.can('view_sales') %}
+<div class="grid g2" style="margin-top:14px">
+  <div class="card"><div class="head" style="margin:0 0 6px"><h2>Live sales today</h2><span class="pill green">● LIVE</span></div>
+    <ul class="feed" id="feed"><li class="muted">Loading...</li></ul></div>
+  <div class="grid" style="align-content:start">
+    <div class="card"><h2>Who is working</h2><div id="staff" class="small"></div></div>
+    <div class="card"><h2>Sales by hour</h2><div class="bars" id="bars"></div></div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid g2" style="margin-top:14px">
+  <div class="card"><h2 style="color:var(--red)">Low stock: buy more</h2>
+    {% if low %}<div class="table-wrap"><table><tr><th>Item</th><th class="num">Left</th><th class="num">Alert at</th></tr>
+    {% for i in low %}<tr class="{{ 'out' if i.qty<=0 else 'low' }}"><td>{{ i.name }}</td><td class="num">{{ i.qty }}</td><td class="num">{{ i.low_limit if i.low_limit is not none else shop.low_stock }}</td></tr>{% endfor %}
+    </table></div>{% else %}<p class="muted">All stock is fine.</p>{% endif %}</div>
+  <div class="card"><h2 style="color:var(--orange)">Expiry alerts</h2>
+    {% if exp %}<div class="table-wrap"><table><tr><th>Item</th><th>Expires</th><th class="num">Days</th></tr>
+    {% for i, st, days in exp %}<tr class="soon"><td>{{ i.name }}</td><td>{{ fmt_d(i.expiry) }}</td><td class="num">{{ 'EXPIRED' if st=='expired' else days }}</td></tr>{% endfor %}
+    </table></div>{% else %}<p class="muted">Nothing expiring soon.</p>{% endif %}</div>
+</div>
+{% endblock %}
+{% block scripts %}<script>SSM.live({{ 'true' if current_user.can('view_sales') else 'false' }});</script>{% endblock %}

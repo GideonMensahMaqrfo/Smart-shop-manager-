@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+{% set n = shop.notify_cfg %}
+<h1>Settings</h1>
+<form method="post" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="{{ csrf() }}">
+<div class="grid g2">
+<div class="card"><h2>Shop details</h2>
+ <label>Shop name</label><input name="name" value="{{ shop.name }}" required>
+ <label>Address / location</label><input name="address" value="{{ shop.address }}">
+ <div class="row"><div><label>Phone</label><input name="phone" value="{{ shop.phone }}"></div><div><label>Email</label><input name="email" value="{{ shop.email }}"></div></div>
+ <label>Logo</label>{% if shop.logo %}<img src="{{ url_for('shop_logo', shop_id=shop.id) }}" style="max-height:70px;display:block;margin-bottom:6px"><label class="check"><input type="checkbox" name="remove_logo"> Remove logo</label>{% endif %}
+ <input type="file" name="logo" accept="image/*">
+ <label>App colour</label><input type="color" name="accent" value="{{ shop.accent }}" style="height:44px;padding:3px">
+</div>
+<div class="card"><h2>Selling &amp; receipts</h2>
+ <label>Payment methods your shop accepts</label>
+ <div class="row" style="flex:0">{% for p in ALL_PAYMENTS %}<label class="check"><input type="checkbox" name="pay_{{ p }}" {{ 'checked' if p in shop.payment_list }}> {{ p }}</label>{% endfor %}</div>
+ <div class="row"><div><label>Currency</label><input name="currency" value="{{ shop.currency }}"></div>
+ <div><label>Receipt paper</label><select name="paper"><option {{ 'selected' if shop.paper=='58mm' }}>58mm</option><option {{ 'selected' if shop.paper=='80mm' }}>80mm</option></select></div></div>
+ <label>Message at bottom of receipt</label><input name="receipt_footer" value="{{ shop.receipt_footer }}">
+ <div class="row"><div><label>Low stock alert at</label><input name="low_stock" value="{{ shop.low_stock }}" inputmode="numeric"></div>
+ <div><label>Warn before expiry (days)</label><input name="expiry_days" value="{{ shop.expiry_days }}" inputmode="numeric"></div></div>
+</div>
+<div class="card"><h2>Notifications</h2><p class="small muted">Sent to the owner and staff who have "Get phone notifications".</p>
+ <label class="check"><input type="checkbox" name="n_each_sale" {{ 'checked' if n.each_sale }}> Every sale</label>
+ <label>Alert me for big sales of at least ({{ shop.currency }}, 0 = off)</label><input name="n_big_sale" value="{{ n.big_sale }}" inputmode="decimal">
+ <label class="check"><input type="checkbox" name="n_low_stock" {{ 'checked' if n.low_stock }}> Item becomes low on stock</label>
+ <label class="check"><input type="checkbox" name="n_cancel" {{ 'checked' if n.cancel }}> A staff member cancels a sale</label>
+ <label class="check"><input type="checkbox" name="n_staff_login" {{ 'checked' if n.staff_login }}> Staff logs in</label>
+ <label class="check"><input type="checkbox" name="n_daily" {{ 'checked' if n.daily }}> Daily summary in the evening</label>
+ {% if VAPID_PUBLIC %}<button type="button" class="btn gold sm" onclick="SSM.enablePush()" style="margin-top:8px">Turn on notifications on THIS device</button>{% endif %}
+</div>
+<div class="card"><h2>Your data</h2><p class="muted small">Download everything (items, sales, debts, restocks) as one Excel file. Keep a copy every month.</p>
+ <a class="btn ghost" href="{{ url_for('backup_download') }}">Download backup (Excel)</a></div>
+</div>
+<button class="btn green lg" style="margin-top:14px">Save settings</button>
+</form>
+{% endblock %}

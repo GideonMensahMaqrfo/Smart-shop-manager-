@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Sell{% endblock %}
+{% block content %}
+<div class="pos">
+  <section>
+    <div class="toolbar">
+      <input id="q" placeholder="Search item or scan / type code, then Enter" autocomplete="off" autofocus style="font-size:1.05rem;padding:12px">
+      <button class="btn ghost" id="voiceBtn" hidden title="Speak">🎤</button>
+      <button class="btn ghost" id="camBtn" hidden title="Scan with camera">📷</button>
+      <select id="cat" style="max-width:180px"><option value="">All categories</option></select>
+    </div>
+    <div class="prod-grid" id="grid"></div>
+  </section>
+  <aside class="card cart">
+    <div class="head" style="margin-bottom:4px"><h2>Cart</h2><button class="btn ghost sm" id="clear">Clear</button></div>
+    <div class="cart-lines" id="lines"><p class="muted">Tap an item to add it.</p></div>
+    <div class="row" style="margin-top:10px"><span class="muted">Subtotal</span><b class="num" id="sub">0.00</b></div>
+    {% if current_user.can('discount') %}<div class="row"><span class="muted">Discount</span><input id="disc" inputmode="decimal" style="max-width:120px;text-align:right" placeholder="0"></div>{% endif %}
+    <div class="row" style="margin:6px 0"><span><b>TOTAL</b></span><span class="total num" id="total">0.00</span></div>
+    <div class="seg" id="pay">{% for p in shop.payment_list %}{% if p != 'Credit' or current_user.can('credit_sale') %}<button data-p="{{ p }}" class="{{ 'on' if loop.first }}">{{ p }}</button>{% endif %}{% endfor %}</div>
+    <div id="paidBox"><label id="paidLbl">Cash given</label><input id="paid" inputmode="decimal" style="font-size:1.1rem;text-align:right">
+      <div class="quick" id="quick"><button data-a="exact">Exact</button><button data-a="20">20</button><button data-a="50">50</button><button data-a="100">100</button><button data-a="200">200</button></div></div>
+    <div class="change" id="change" style="margin:8px 0"></div>
+    <div class="row"><input id="cust" list="custlist" placeholder="Customer name"><input id="phone" placeholder="Phone (for WhatsApp)"></div>
+    <datalist id="custlist">{% for c in customers %}<option value="{{ c }}">{% endfor %}</datalist>
+    <input id="ref" placeholder="MoMo reference" style="margin-top:8px;display:none">
+    <button class="btn green block lg" id="done" style="margin-top:12px">Complete sale</button>
+    <p class="small muted center" style="margin:6px 0 0">Shortcut: F12 · <span id="queueInfo"></span></p>
+  </aside>
+</div>
+<dialog id="camDlg"><h3>Point the camera at the barcode</h3><video id="cam" playsinline style="width:100%;border-radius:10px"></video><button class="btn ghost block" onclick="POS.stopCam()" style="margin-top:8px">Close</button></dialog>
+{% endblock %}
+{% block scripts %}<script>window.SHOP={currency:{{ shop.currency|tojson }},canDiscount:{{ 'true' if current_user.can('discount') else 'false' }}};</script>
+<script src="{{ url_for('static', filename='js/pos.js') }}"></script>{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Import Data{% endblock %}
+{% block content %}
+<h1>Import Data</h1><p class="muted">Bring your item list or old sales from Excel. You see a preview before anything is saved.</p>
+{% if not preview %}
+<div class="grid g2">
+{% for k, t, d in [('items','Items from Excel','Item Name, Category, Quantity, Cost Price, Selling Price, Barcode...'),('sales','Old sales from your book','Date, Item Name, Quantity, Selling Price or Total Amount, Payment, Customer')] %}
+<form class="card" method="post" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="{{ csrf() }}"><input type="hidden" name="kind" value="{{ k }}">
+<h2>{{ t }}</h2><p class="small muted">Columns: {{ d }}</p>
+<a class="btn ghost sm" href="{{ url_for('import_template', kind=k) }}">Download Excel template</a>
+<label>Choose your Excel or CSV file</label><input type="file" name="file" accept=".xlsx,.csv" required>
+<button class="btn" style="margin-top:12px">Check the file</button></form>
+{% endfor %}</div>
+{% else %}
+{% set bad = preview|selectattr('err')|list %}
+<form class="card" method="post"><input type="hidden" name="_csrf" value="{{ csrf() }}"><input type="hidden" name="token" value="{{ token }}">
+<h2>Check before importing: {{ preview|length }} row(s){% if bad %}, <span style="color:var(--red)">{{ bad|length }} with mistakes (will be skipped)</span>{% endif %}</h2>
+{% if kind=='items' %}
+<div class="row" style="flex:0"><label class="check"><input type="radio" name="qty_mode" value="add" checked> Existing items: ADD the quantity</label><label class="check"><input type="radio" name="qty_mode" value="replace"> REPLACE the quantity</label><label class="check"><input type="checkbox" name="update_prices" checked> Update prices</label></div>
+<div class="table-wrap"><table><tr><th>Row</th><th>Item</th><th>Category</th><th class="num">Qty</th><th class="num">Cost</th><th class="num">Price</th><th>Code</th><th>Result</th></tr>
+{% for p in preview %}<tr class="{{ 'low' if p.err }}"><td>{{ p.row }}</td><td>{{ p.name }}</td><td>{{ p.category }}</td><td class="num">{{ p.qty if p.qty is not none }}</td><td class="num">{{ '%.2f'|format(p.cost) if p.cost is not none }}</td><td class="num">{{ '%.2f'|format(p.price) if p.price is not none }}</td><td>{{ p.barcode }}</td><td>{{ p.status }}</td></tr>{% endfor %}</table></div>
+{% else %}
+<label class="check"><input type="checkbox" name="skip_dups" checked> Skip rows already imported before</label>
+<label class="check"><input type="checkbox" name="reduce_stock"> Reduce stock (only if your stock count does not already include these sales)</label>
+<label class="check"><input type="checkbox" name="add_debt"> Add credit sales to the Debt Book</label>
+<div class="table-wrap"><table><tr><th>Row</th><th>Date</th><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Cost</th><th>Payment</th><th>Customer</th><th>Result</th></tr>
+{% for p in preview %}<tr class="{{ 'low' if p.err else ('void' if p.dup) }}"><td>{{ p.row }}</td><td>{{ p.date }}</td><td>{{ p.item }}</td><td class="num">{{ p.qty }}</td><td class="num">{{ '%.2f'|format(p.price) }}</td><td class="num">{{ '%.2f'|format(p.cost) }}</td><td>{{ p.payment }}</td><td>{{ p.customer }}</td><td>{{ p.status }}</td></tr>{% endfor %}</table></div>
+{% endif %}
+<div class="row" style="margin-top:14px;flex:0"><button class="btn green">Import now</button><a class="btn ghost" href="{{ url_for('import_data') }}">Choose another file</a></div>
+</form>{% endif %}
+{% endblock %}

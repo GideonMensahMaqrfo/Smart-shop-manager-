@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Subscription{% endblock %}
+{% block content %}
+<h1>Subscription</h1>
+<div class="card" style="margin-bottom:14px;border-left:5px solid {{ 'var(--green)' if shop.is_live else 'var(--red)' }}">
+<b>{{ 'Free trial' if shop.status=='trial' else (shop.plan.name if shop.plan else 'Plan') }}</b> ·
+{% if shop.is_live %}active until <b>{{ fmt_d(shop.sub_ends) }}</b> ({{ shop.days_left }} day(s) left){% else %}<span style="color:var(--red)">ENDED {{ fmt_d(shop.sub_ends) }}, selling is paused</span>{% endif %}
+{% if shop.plan %}<div class="small muted">Users: {{ shop.plan.max_users or 'unlimited' }} · Items: {{ shop.plan.max_items or 'unlimited' }}</div>{% endif %}
+</div>
+<div class="grid g3">{% for p in plans %}<div class="card"><h2>{{ p.name }}</h2>
+<div class="stat"><div class="val">{{ shop.currency }} {{ '{:,.0f}'.format(p.price) }}</div><div class="sub">for {{ p.days }} days</div></div>
+<ul class="small">{% for l in p.features.split('\n') if l.strip() %}<li>{{ l }}</li>{% endfor %}</ul>
+{% if paystack %}<form method="post" action="{{ url_for('billing_pay', plan_id=p.id) }}"><input type="hidden" name="_csrf" value="{{ csrf() }}"><button class="btn green block">Pay with MoMo or card</button></form>{% endif %}
+</div>{% endfor %}</div>
+<div class="card" style="margin-top:14px"><h2>Pay by MoMo transfer</h2><p>{{ pset('manual_payment_info') }}</p>
+{% if pset('support_whatsapp') %}<a class="btn green" target="_blank" href="https://wa.me/{{ pset('support_whatsapp') }}?text={{ ('Hello, I paid for ' ~ shop.name ~ ' (shop #' ~ shop.id ~ ').')|urlencode }}">Send receipt on WhatsApp</a>{% endif %}</div>
+<div class="card" style="margin-top:14px"><h2>Payment history</h2><table><tr><th>Date</th><th>Reference</th><th class="num">Amount</th><th>Status</th></tr>
+{% for p in pays %}<tr><td>{{ fmt_dt(p.ts) }}</td><td class="small">{{ p.reference }}</td><td class="num">{{ '{:,.2f}'.format(p.amount or 0) }}</td><td><span class="pill {{ 'green' if p.status=='success' else 'grey' }}">{{ p.status }}</span></td></tr>
+{% else %}<tr><td colspan="4" class="muted">No payments yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

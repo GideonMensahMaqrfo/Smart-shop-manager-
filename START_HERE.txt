@@ -1,0 +1,73 @@
+==================================================================
+   SMART SHOP MANAGER ONLINE  -  HOW TO START  (easy steps)
+==================================================================
+
+YOU ONLY NEED TO DO STEPS 1 TO 4 ONE TIME.
+
+STEP 1 - Unzip the folder
+   Right-click "SmartShopOnline.zip"  >  "Extract All..."  >  "Extract".
+   A new folder opens. Work inside THIS new folder.
+
+STEP 2 - Double-click  START_SMART_SHOP.bat
+   A BLUE window opens.
+   If Windows shows "Windows protected your PC":
+        click "More info"  >  "Run anyway".
+   (This happens with any new program. It is safe.)
+
+STEP 3 - Wait (first time only: 3 to 5 minutes, internet needed)
+   The blue window installs everything by itself, including Python.
+   If Windows asks "Do you want to allow this app to make changes?"
+   click YES.
+   Do NOT close the blue window.
+
+STEP 4 - The shop opens in your browser
+   When you see  "SMART SHOP MANAGER ONLINE is RUNNING",
+   your browser opens the website by itself.
+   A "Smart Shop Online" icon is also put on your Desktop.
+
+------------------------------------------------------------------
+EVERY DAY AFTER THAT
+   Double-click the "Smart Shop Online" icon on your Desktop.
+   It starts in a few seconds (no waiting, no internet needed
+   to start it on your own computer).
+   KEEP THE BLUE WINDOW OPEN while you use it.
+   Close the blue window to stop it.
+
+------------------------------------------------------------------
+WHAT TO DO ON THE WEBSITE
+   1. Click "Start free" and create your shop (name, password).
+   2. Add items, or Import Data > upload your Excel price list.
+   3. Staff & Permissions > "+ Add staff" to make a cashier login.
+   4. Open the website in another browser window and log in as
+      the cashier. Sell something. Watch your Dashboard change.
+
+   Your platform-owner login (to see all shops and set prices):
+        admin@test.com     password: admin123
+
+USE IT ON YOUR PHONE (same Wi-Fi as the computer)
+   The blue window shows an address like  192.168.1.5:5000
+   Type it in Chrome on your phone.
+   If Windows asks about the firewall, click "Allow access".
+
+------------------------------------------------------------------
+IF SOMETHING GOES WRONG
+   "STOP: you opened this file INSIDE the ZIP"
+        -> Do Step 1 (Extract All) first.
+   "Could not download the parts it needs"
+        -> Check your internet, then double-click START again.
+   "Python could not be installed automatically"
+        -> The window opens python.org for you. Download, tick
+           "Add python.exe to PATH", Install, then START again.
+   Browser says "This site can't be reached"
+        -> The blue window is closed. Double-click the icon again.
+   Still stuck?
+        -> Double-click RESET_FIRST_TIME_SETUP.bat, then START again.
+        -> Send the file "setup_log.txt" to whoever helps you.
+
+------------------------------------------------------------------
+IMPORTANT
+   Running it on your computer is for TRYING it and showing
+   customers. To SELL it to other shops (so they can use it from
+   anywhere), it must be put on the internet. See GO_LIVE_GUIDE.md
+   or ask a developer to do that part for you.
+==================================================================

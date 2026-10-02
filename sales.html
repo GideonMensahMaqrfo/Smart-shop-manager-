@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Sales & Reports{% endblock %}
+{% block content %}
+{% set prof = current_user.can('view_profit') %}
+<div class="head"><div><h1>Sales &amp; Reports</h1><div class="muted">{{ fmt_d(s) }}{% if fmt_d(s) != fmt_d(e) %} – {{ fmt_d(e) }}{% endif %}</div></div>
+<div class="row noprint" style="flex:0"><a class="btn ghost" href="{{ url_for('sales', export='csv', **args) }}">Excel</a><button class="btn ghost" onclick="print()">PDF / Print</button></div></div>
+<div class="tabs noprint">{% for k, t in [('today','Today'),('yesterday','Yesterday'),('week','This week'),('month','This month'),('lastmonth','Last month'),('all','All time')] %}<a href="{{ url_for('sales', p=k) }}" class="{{ 'on' if period==k }}">{{ t }}</a>{% endfor %}</div>
+<form class="toolbar noprint" method="get"><input type="hidden" name="p" value="custom"><input name="from" placeholder="From DD/MM/YYYY" value="{{ args.get('from','') }}"><input name="to" placeholder="To DD/MM/YYYY" value="{{ args.get('to','') }}"><button class="btn">Show</button></form>
+<div class="grid g4">
+ <div class="card stat" style="--c:var(--green)"><div class="lbl">Total sales</div><div class="val">{{ money(sm.total) }}</div><div class="sub">{{ sm.n }} sale(s)</div></div>
+ {% if prof %}<div class="card stat" style="--c:var(--gold)"><div class="lbl">Profit</div><div class="val">{{ money(sm.profit) }}</div><div class="sub">{{ '%.0f'|format(sm.profit/sm.total*100 if sm.total else 0) }}% of sales · cost {{ money(sm.cost) }}</div></div>{% endif %}
+ <div class="card stat" style="--c:var(--orange)"><div class="lbl">Discounts</div><div class="val">{{ money(sm.disc) }}</div></div>
+ <div class="card stat" style="--c:var(--red)"><div class="lbl">Sold on credit</div><div class="val">{{ money(sm.owed) }}</div></div>
+</div>
+<div class="grid g3" style="margin-top:14px">
+ <div class="card"><h2>Most sold</h2><table><tr><th>Item</th><th class="num">Qty</th><th class="num">Sales</th>{% if prof %}<th class="num">Profit</th>{% endif %}</tr>
+ {% for n,q,a,p in top[:12] %}<tr><td>{{ n }}</td><td class="num">{{ q }}</td><td class="num">{{ '{:,.2f}'.format(a or 0) }}</td>{% if prof %}<td class="num">{{ '{:,.2f}'.format(p or 0) }}</td>{% endif %}</tr>{% endfor %}</table></div>
+ <div class="card"><h2>By cashier</h2><table><tr><th>Name</th><th class="num">Sales</th><th class="num">Amount</th></tr>
+ {% for n,c,t,p in by_user %}<tr><td>{{ n }}</td><td class="num">{{ c }}</td><td class="num">{{ '{:,.2f}'.format(t or 0) }}</td></tr>{% endfor %}</table>
+ <h2 style="margin-top:14px">By payment</h2><table><tr><th>Method</th><th class="num">Sales</th><th class="num">Amount</th></tr>
+ {% for n,c,t,p in by_pay %}<tr><td>{{ n }}</td><td class="num">{{ c }}</td><td class="num">{{ '{:,.2f}'.format(t or 0) }}</td></tr>{% endfor %}</table></div>
+ <div class="card"><h2>Day by day</h2><table><tr><th>Day</th><th class="num">Sales</th><th class="num">Total</th>{% if prof %}<th class="num">Profit</th>{% endif %}</tr>
+ {% for d, v in days[:31] %}<tr><td>{{ d.strftime('%a %d/%m') }}</td><td class="num">{{ v[0] }}</td><td class="num">{{ '{:,.2f}'.format(v[1]) }}</td>{% if prof %}<td class="num">{{ '{:,.2f}'.format(v[2]) }}</td>{% endif %}</tr>{% endfor %}</table></div>
+</div>
+<div class="card" style="margin-top:14px"><div class="head" style="margin-bottom:8px"><h2>Sales list</h2>
+{% if current_user.is_owner %}<div class="row noprint" style="flex:0"><button class="btn red sm" onclick="delDlg('cancelled')">Delete all cancelled</button><button class="btn red sm" style="background:#7b1d1d" onclick="delDlg('period')">Clear this period</button></div>{% endif %}</div>
+<div class="table-wrap"><table><tr><th>Receipt</th><th>Date</th><th>Cashier</th><th>Customer</th><th>Payment</th><th>Items</th><th class="num">Total</th>{% if prof %}<th class="num">Profit</th>{% endif %}<th class="noprint"></th></tr>
+{% for r in rows %}<tr class="{{ 'void' if r.voided }}"><td><a href="{{ url_for('receipt', sale_id=r.id) }}">#{{ '%05d' % r.number }}</a>{% if r.source=='imported' %} <span class="pill grey">OLD</span>{% elif r.source=='offline' %} <span class="pill blue">OFFLINE</span>{% endif %}</td>
+<td>{{ fmt_dt(r.ts) }}</td><td>{{ r.user_name }}</td><td>{{ r.customer }}</td><td>{{ r.payment }}</td><td class="small">{% for i in r.items %}{{ i.qty }}× {{ i.name }}{{ ', ' if not loop.last }}{% endfor %}</td>
+<td class="num">{{ '{:,.2f}'.format(r.total) }}</td>{% if prof %}<td class="num">{{ '{:,.2f}'.format(r.total-r.cost_total) }}</td>{% endif %}
+<td class="noprint" style="white-space:nowrap">{% if r.voided %}<span class="pill red">CANCELLED</span>{% elif current_user.can('cancel_sales') %}<form method="post" action="{{ url_for('sale_cancel', sale_id=r.id) }}" style="display:inline" onsubmit="return confirm('Cancel sale #{{ '%05d' % r.number }}? Items go back into stock.')"><input type="hidden" name="_csrf" value="{{ csrf() }}"><button class="btn ghost sm">Cancel</button></form>{% endif %}
+{% if current_user.is_owner %}<button class="btn ghost sm" onclick="delDlg('one',{{ r.id }})">Delete</button>{% endif %}</td></tr>
+{% else %}<tr><td colspan="9" class="muted center">No sales in this period.</td></tr>{% endfor %}</table></div></div>
+{% if current_user.is_owner %}
+<dialog id="del"><form method="post" action="{{ url_for('sales_delete') }}"><input type="hidden" name="_csrf" value="{{ csrf() }}">
+<input type="hidden" name="mode" id="dmode"><input type="hidden" name="sale_id" id="dsale"><input type="hidden" name="p" value="{{ period }}"><input type="hidden" name="from" value="{{ args.get('from','') }}"><input type="hidden" name="to" value="{{ args.get('to','') }}">
+<h2>Delete from history</h2><p id="dmsg" class="small"></p><p class="small muted">Stock and customer debts do NOT change. This cannot be undone.</p>
+<label>Your password</label><input type="password" name="password" required>
+<div class="row" style="margin-top:12px"><button class="btn red">Delete</button><button type="button" class="btn ghost" onclick="this.closest('dialog').close()">Keep</button></div></form></dialog>
+<script>function delDlg(m,id){dmode.value=m;dsale.value=id||'';dmsg.textContent={one:'Delete this one sale from the history.',cancelled:'Delete ALL cancelled sales.',period:'Delete ALL sales shown for this period.'}[m];del.showModal()}</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Items & Stock{% endblock %}
+{% block content %}
+<div class="head"><div><h1>Items &amp; Stock</h1><div class="muted">Red rows are running low. Orange rows expire soon.</div></div>
+  <div class="row" style="flex:0">{% if current_user.can('manage_items') %}<a class="btn green" href="{{ url_for('item_form') }}">+ Add item</a>{% endif %}
+  <a class="btn ghost" href="{{ url_for('items', q=q, cat=cat, view=view, export='csv') }}">Excel</a>
+  <button class="btn ghost" onclick="print()">PDF / Print</button></div></div>
+<form class="toolbar noprint" method="get">
+  <input name="q" value="{{ q }}" placeholder="Search name, code, supplier" id="iq">
+  <button type="button" class="btn ghost" data-voice="iq" hidden>🎤</button>
+  <select name="cat" onchange="this.form.submit()"><option value="">All categories</option>{% for c in cats %}<option {{ 'selected' if c==cat }}>{{ c }}</option>{% endfor %}</select>
+  <select name="view" onchange="this.form.submit()"><option value="">All items</option><option value="low" {{ 'selected' if view=='low' }}>Low stock</option><option value="out" {{ 'selected' if view=='out' }}>Finished (0 left)</option><option value="expiring" {{ 'selected' if view=='expiring' }}>Expiring soon</option></select>
+  <button class="btn">Search</button>
+</form>
+<p class="small muted">{{ totals.n }} item(s) · {{ '{:,}'.format(totals.pieces) }} pieces{% if see_cost %} · Value at cost {{ money(totals.cost) }}{% endif %} · At selling price {{ money(totals.sell) }}</p>
+<div class="table-wrap"><table>
+<tr><th>Item</th><th>Category</th><th class="num">Qty left</th>{% if see_cost %}<th class="num">Cost</th>{% endif %}<th class="num">Price</th>{% if see_cost %}<th class="num">Profit/pc</th>{% endif %}<th>Code</th><th>Expiry</th><th class="noprint"></th></tr>
+{% for r in rows %}{% set i = r.i %}
+<tr class="{{ 'out' if i.qty<=0 else ('low' if r.low else ('soon' if r.exp else '')) }}">
+  <td>{% if i.image %}<img src="{{ url_for('uploads', name=i.image) }}" alt="" style="width:34px;height:34px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:8px">{% endif %}<b>{{ i.name }}</b></td>
+  <td>{{ i.category }}</td>
+  <td class="num">{{ i.qty }} {% if i.qty<=0 %}<span class="pill red">FINISHED</span>{% elif r.low %}<span class="pill red">LOW</span>{% endif %}</td>
+  {% if see_cost %}<td class="num">{{ '{:,.2f}'.format(i.cost) }}</td>{% endif %}
+  <td class="num">{{ '{:,.2f}'.format(i.price) }}</td>
+  {% if see_cost %}<td class="num">{{ '{:,.2f}'.format(i.price-i.cost) }}</td>{% endif %}
+  <td>{{ i.barcode }}</td><td>{{ fmt_d(i.expiry) }}{% if r.exp=='expired' %} <span class="pill red">EXPIRED</span>{% endif %}</td>
+  <td class="noprint" style="white-space:nowrap">{% if current_user.can('manage_items') %}<a class="btn ghost sm" href="{{ url_for('item_form', item_id=i.id) }}">Edit</a>{% endif %}
+  {% if current_user.can('restock') %}<a class="btn ghost sm" href="{{ url_for('restock', item=i.id) }}">Restock</a>{% endif %}
+  {% if current_user.can('delete_items') %}<form method="post" action="{{ url_for('item_delete', item_id=i.id) }}" style="display:inline" onsubmit="return confirm('Delete {{ i.name|e }}? Old sales stay in reports.')"><input type="hidden" name="_csrf" value="{{ csrf() }}"><button class="btn red sm">Delete</button></form>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="9" class="muted center">No items yet. {% if current_user.can('manage_items') %}<a href="{{ url_for('item_form') }}">Add your first item</a> or <a href="{{ url_for('import_data') }}">import from Excel</a>.{% endif %}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

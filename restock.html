@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Restock{% endblock %}
+{% block content %}
+<h1>Restock</h1><p class="muted">Add new stock to an item. Every restock is saved with who did it and when.</p>
+<div class="grid g2" style="grid-template-columns:minmax(0,380px) 1fr">
+<form class="card" method="post"><input type="hidden" name="_csrf" value="{{ csrf() }}">
+  <label>Item (type to search or scan code)</label>
+  <input list="itemlist" id="pick" placeholder="Search item..." value="{{ sel.name if sel else '' }}" autocomplete="off">
+  <datalist id="itemlist">{% for i in items %}<option value="{{ i.name }}" data-id="{{ i.id }}" data-cost="{{ i.cost }}" data-price="{{ i.price }}" data-qty="{{ i.qty }}" data-sup="{{ i.supplier }}" data-code="{{ i.barcode }}">{{ i.qty }} left</option>{% endfor %}</datalist>
+  <input type="hidden" name="item_id" id="item_id" value="{{ sel.id if sel else '' }}">
+  <p class="small" id="info">{% if sel %}In stock now: <b>{{ sel.qty }}</b>{% else %}<span class="muted">Choose an item.</span>{% endif %}</p>
+  <label>Quantity to ADD *</label><input name="qty" inputmode="numeric" required>
+  {% if current_user.can('see_cost') %}<label>Cost price per piece</label><input name="cost" id="cost" inputmode="decimal" value="{{ '%.2f'|format(sel.cost) if sel else '' }}">{% endif %}
+  <label>Selling price per piece</label><input name="price" id="price" inputmode="decimal" value="{{ '%.2f'|format(sel.price) if sel else '' }}">
+  <label>Supplier</label><input name="supplier" id="sup" value="{{ sel.supplier if sel else '' }}">
+  <label>Note</label><input name="note">
+  <button class="btn green block" style="margin-top:14px">Save restock</button>
+</form>
+<div class="card"><h2>Restock history</h2>
+<div class="table-wrap"><table><tr><th>Date</th><th>Item</th><th class="num">Added</th><th class="num">Now</th>{% if current_user.can('see_cost') %}<th class="num">Cost</th>{% endif %}<th>By</th><th>Note</th>{% if current_user.is_owner %}<th></th>{% endif %}</tr>
+{% for r in hist %}<tr><td>{{ fmt_dt(r.ts) }}</td><td>{{ r.name }}</td><td class="num">{{ '%+d'|format(r.qty_added) }}</td><td class="num">{{ r.new_qty }}</td>
+{% if current_user.can('see_cost') %}<td class="num">{% if r.old_cost != r.new_cost %}{{ '%.2f'|format(r.old_cost) }} → {% endif %}{{ '%.2f'|format(r.new_cost or 0) }}</td>{% endif %}
+<td>{{ r.user_name }}</td><td class="small">{{ r.supplier }} {{ r.note }}</td>
+{% if current_user.is_owner %}<td><form method="post" action="{{ url_for('restock_delete', rid=r.id) }}" onsubmit="return confirm('Delete this record? Stock will not change.')"><input type="hidden" name="_csrf" value="{{ csrf() }}"><button class="btn ghost sm">✕</button></form></td>{% endif %}</tr>
+{% else %}<tr><td colspan="8" class="muted center">No restocks yet.</td></tr>{% endfor %}</table></div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+const pick=document.getElementById('pick');
+pick.addEventListener('input',()=>{const v=pick.value.trim().toLowerCase();
+ const o=[...document.querySelectorAll('#itemlist option')].find(o=>o.value.toLowerCase()==v||o.dataset.code.toLowerCase()==v);
+ if(!o)return; pick.value=o.value; document.getElementById('item_id').value=o.dataset.id;
+ document.getElementById('info').innerHTML='In stock now: <b>'+o.dataset.qty+'</b>';
+ const c=document.getElementById('cost'); if(c)c.value=(+o.dataset.cost).toFixed(2);
+ document.getElementById('price').value=(+o.dataset.price).toFixed(2); document.getElementById('sup').value=o.dataset.sup;});
+</script>{% endblock %}

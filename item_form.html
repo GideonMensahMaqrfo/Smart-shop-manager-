@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if item else 'Add' }} item{% endblock %}
+{% block content %}
+{% macro v(k, d='') %}{{ f.get(k) if f.get(k) is not none else d }}{% endmacro %}
+<h1>{{ 'Edit item' if item else 'Add new item' }}</h1>
+<form class="card" method="post" enctype="multipart/form-data" style="max-width:760px"><input type="hidden" name="_csrf" value="{{ csrf() }}">
+<div class="grid g2">
+ <div><label>Item name *</label><input name="name" required value="{{ v('name', item.name if item else '') }}"></div>
+ <div><label>Category</label><input name="category" list="cats" value="{{ v('category', item.category if item else '') }}"><datalist id="cats">{% for c in cats %}<option value="{{ c }}">{% endfor %}</datalist></div>
+ <div><label>Quantity in shop *</label><input name="qty" inputmode="numeric" required value="{{ v('qty', item.qty if item else '') }}"></div>
+ {% if current_user.can('see_cost') %}<div><label>Cost price (per piece) *</label><input name="cost" inputmode="decimal" required value="{{ v('cost', '%.2f'|format(item.cost) if item else '') }}"></div>{% else %}<input type="hidden" name="cost" value="{{ item.cost if item else 0 }}">{% endif %}
+ <div><label>Selling price (per piece) *</label><input name="price" inputmode="decimal" required value="{{ v('price', '%.2f'|format(item.price) if item else '') }}"></div>
+ <div><label>Barcode / item code</label><input name="barcode" value="{{ v('barcode', item.barcode if item else '') }}" placeholder="Scan or type"></div>
+ <div><label>Supplier</label><input name="supplier" value="{{ v('supplier', item.supplier if item else '') }}"></div>
+ <div><label>Expiry date (DD/MM/YYYY)</label><input name="expiry" placeholder="Leave empty if it does not expire" value="{{ v('expiry', fmt_d(item.expiry) if item else '') }}"></div>
+ <div><label>Low stock alert at (empty = {{ shop.low_stock }})</label><input name="low_limit" inputmode="numeric" value="{{ v('low_limit', item.low_limit if item and item.low_limit is not none else '') }}"></div>
+ <div><label>Picture</label><input type="file" name="image" accept="image/*" capture="environment">
+  {% if item and item.image %}<img src="{{ url_for('uploads', name=item.image) }}" style="max-width:120px;border-radius:8px;margin-top:6px"><label class="check"><input type="checkbox" name="remove_image"> Remove picture</label>{% endif %}</div>
+</div>
+{% if item %}<p class="small muted">Tip: to add new stock, use Restock so it is recorded in the history.</p>{% endif %}
+<div class="row" style="margin-top:14px;flex:0"><button class="btn green">Save item</button><a class="btn ghost" href="{{ url_for('items') }}">Cancel</a></div>
+</form>
+{% endblock %}

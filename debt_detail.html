@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('debts') }}">← Debt Book</a></p>
+<div class="head"><div><h1>{{ c.name }}</h1><div class="muted">{{ c.phone }}</div></div>
+<div class="stat card" style="--c:var(--red);min-width:200px"><div class="lbl">Owes</div><div class="val" style="color:var(--red)">{{ money(c.balance) }}</div></div></div>
+<div class="grid g2" style="grid-template-columns:minmax(0,360px) 1fr">
+{% if c.balance > 0 %}<form class="card" method="post" action="{{ url_for('debts') }}" id="pay"><input type="hidden" name="_csrf" value="{{ csrf() }}">
+<input type="hidden" name="action" value="pay"><input type="hidden" name="cid" value="{{ c.id }}">
+<h2>Record a payment</h2><label>Amount paid</label><input name="amount" inputmode="decimal" value="{{ '%.2f'|format(c.balance) }}" required>
+<label>Paid by</label><select name="method"><option>Cash</option><option>MoMo</option><option>Card</option><option>Bank</option></select>
+<label>Note</label><input name="note"><button class="btn green block" style="margin-top:12px">Save payment</button></form>
+{% else %}<div class="card"><h2>All paid</h2><p class="muted">{{ c.name }} does not owe anything.</p></div>{% endif %}
+<div class="card"><h2>History</h2><div class="table-wrap"><table><tr><th>Date</th><th>What</th><th class="num">Amount</th><th>By</th><th>Note</th></tr>
+{% for t in tx %}<tr><td>{{ fmt_dt(t.ts) }}</td><td>{{ {'credit':'Took on credit','payment':'Paid','manual':'Debt added','cancelled':'Sale cancelled'}.get(t.kind, t.kind) }}{% if t.method %} ({{ t.method }}){% endif %}</td>
+<td class="num" style="color:{{ 'var(--green)' if t.kind=='payment' else 'var(--red)' }}">{{ '-' if t.kind=='payment' else '+' }}{{ '{:,.2f}'.format(t.amount|abs) }}</td><td>{{ t.user_name }}</td>
+<td class="small">{% if t.sale_id %}<a href="{{ url_for('receipt', sale_id=t.sale_id) }}">{{ t.note }}</a>{% else %}{{ t.note }}{% endif %}</td></tr>{% endfor %}</table></div></div>
+</div>
+{% endblock %}

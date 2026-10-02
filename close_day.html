@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Close Day{% endblock %}
+{% block content %}
+{% set prof = current_user.can('view_profit') %}{% set P = c.pays %}
+<div class="head noprint"><div><h1>Close Day</h1><div class="muted">What you sold, money to count, what finished.</div></div>
+<form class="row" method="get" style="flex:0"><input name="date" value="{{ day.strftime('%d/%m/%Y') }}" style="width:130px"><button class="btn ghost">Show</button></form></div>
+<div class="card" style="max-width:760px">
+<h2>{{ shop.name }}: Daily closing report</h2><p class="muted">{{ day.strftime('%A, %d %B %Y') }} · printed by {{ current_user.name or current_user.username }} at {{ now().strftime('%H:%M') }}</p>
+<div class="grid g3">
+ <div class="stat card" style="--c:var(--green)"><div class="lbl">Total sales</div><div class="val">{{ money(c.sm.total) }}</div><div class="sub">{{ c.sm.n }} sale(s){% if c.voided %} · {{ c.voided }} cancelled{% endif %}</div></div>
+ <div class="stat card" style="--c:var(--gold)"><div class="lbl">Expected cash in drawer</div><div class="val">{{ money(c.cash_in) }}</div></div>
+ {% if prof %}<div class="stat card"><div class="lbl">Profit</div><div class="val">{{ money(c.sm.profit) }}</div></div>{% endif %}
+</div>
+<h3 style="margin-top:16px">Money</h3><table>
+{% for m in ['Cash','MoMo','Card','Bank','Credit'] if P.get(m) %}<tr><td>{{ m }} sales ({{ P[m].n }})</td><td class="num">{{ money(P[m].t) }}</td></tr>{% endfor %}
+<tr><td>Deposits on credit sales (cash)</td><td class="num">{{ money(P.get('Credit',{}).get('dep',0)) }}</td></tr>
+{% for m, v in c.dp.items() %}<tr><td>Debt payments received ({{ m }})</td><td class="num">{{ money(v) }}</td></tr>{% endfor %}
+<tr><td>Discounts given</td><td class="num">{{ money(c.sm.disc) }}</td></tr></table>
+<h3 style="margin-top:16px">Items sold</h3><table><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr>
+{% for n,q,a in c.sold %}<tr><td>{{ n }}</td><td class="num">{{ q }}</td><td class="num">{{ '{:,.2f}'.format(a) }}</td></tr>{% else %}<tr><td colspan="3" class="muted">Nothing sold.</td></tr>{% endfor %}</table>
+<div class="grid g2" style="margin-top:16px">
+<div><h3>Finished today</h3>{% for i in c.finished %}<div>• {{ i.name }}</div>{% else %}<p class="muted">Nothing finished.</p>{% endfor %}</div>
+<div><h3>Low stock: buy more</h3>{% for i in c.low %}<div>• {{ i.name }} ({{ i.qty }} left)</div>{% else %}<p class="muted">All fine.</p>{% endfor %}</div></div>
+{% if c.debts %}<h3 style="margin-top:16px">New debts today</h3>{% for s in c.debts %}<div>• {{ s.customer }}: {{ money(s.owed) }}</div>{% endfor %}{% endif %}
+<p style="margin-top:24px">Cash counted: ____________ &nbsp;&nbsp; Signature: ____________</p>
+</div>
+<div class="row noprint" style="margin-top:14px;max-width:760px">
+<button class="btn ghost" onclick="print()">Print / Save PDF</button>
+<form method="post" action="{{ url_for('close_day_send') }}"><input type="hidden" name="_csrf" value="{{ csrf() }}"><input type="hidden" name="date" value="{{ day.strftime('%d/%m/%Y') }}"><button class="btn green block">Close day &amp; notify owner</button></form></div>
+{% endblock %}

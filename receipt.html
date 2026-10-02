@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Receipt #{{ '%05d' % s.number }}</title>
+<style>
+body{margin:0;background:#eee;font:13px/1.35 "Courier New",monospace;color:#000}
+.r{background:#fff;width:{{ '76mm' if shop.paper=='80mm' else '54mm' }};margin:16px auto;padding:10px 8px}
+.c{text-align:center}.lr{display:flex;justify-content:space-between;gap:6px}.hr{border-top:1px dashed #000;margin:6px 0}
+img{max-width:60%;max-height:70px;display:block;margin:0 auto 6px}
+.b{font-weight:bold}.tools{text-align:center;margin:10px;font-family:system-ui}
+.tools a,.tools button{display:inline-block;margin:4px;padding:10px 16px;border-radius:10px;border:0;background:#24326e;color:#fff;text-decoration:none;font:600 14px system-ui;cursor:pointer}
+.tools .wa{background:#1b8a5a}.tools .g{background:#ddd;color:#000}
+@media print{body{background:#fff}.tools{display:none}.r{margin:0;width:auto;padding:0}@page{margin:2mm}}
+</style></head><body>
+<div class="tools">
+  <button onclick="print()">Print / Save PDF</button>
+  <a class="wa" target="_blank" href="https://wa.me/{{ (s.phone or '')|replace(' ','')|replace('+','')|replace('-','') }}?text={{ wa_text|urlencode }}">Send on WhatsApp</a>
+  <a class="g" href="{{ url_for('pos') if current_user.can('sell') else url_for('sales') }}">Back</a>
+</div>
+<div class="r">
+  {% if shop.logo %}<img src="{{ url_for('shop_logo', shop_id=shop.id) }}" alt="">{% endif %}
+  <div class="c b">{{ shop.name|upper }}</div>
+  {% if shop.address %}<div class="c">{{ shop.address }}</div>{% endif %}
+  {% if shop.phone %}<div class="c">Tel: {{ shop.phone }}</div>{% endif %}
+  <div class="hr"></div>
+  <div class="lr"><span>Receipt</span><span>#{{ '%05d' % s.number }}</span></div>
+  <div class="lr"><span>Date</span><span>{{ fmt_dt(s.ts) }}</span></div>
+  <div class="lr"><span>Served by</span><span>{{ s.user_name }}</span></div>
+  {% if s.customer %}<div class="lr"><span>Customer</span><span>{{ s.customer }}</span></div>{% endif %}
+  <div class="hr"></div>
+  {% for i in s.items %}<div>{{ i.name }}</div><div class="lr"><span>&nbsp;{{ i.qty }} x {{ '{:,.2f}'.format(i.price) }}</span><span>{{ '{:,.2f}'.format(i.qty*i.price) }}</span></div>{% endfor %}
+  <div class="hr"></div>
+  <div class="lr"><span>Subtotal</span><span>{{ '{:,.2f}'.format(s.subtotal) }}</span></div>
+  {% if s.discount %}<div class="lr"><span>Discount</span><span>-{{ '{:,.2f}'.format(s.discount) }}</span></div>{% endif %}
+  <div class="lr b"><span>TOTAL</span><span>{{ shop.currency }} {{ '{:,.2f}'.format(s.total) }}</span></div>
+  <div class="hr"></div>
+  {% if s.payment=='Cash' %}<div class="lr"><span>Cash given</span><span>{{ '{:,.2f}'.format(s.tendered) }}</span></div><div class="lr"><span>Change</span><span>{{ '{:,.2f}'.format(s.change_given) }}</span></div>
+  {% elif s.payment=='Credit' %}{% if s.deposit %}<div class="lr"><span>Paid now</span><span>{{ '{:,.2f}'.format(s.deposit) }}</span></div>{% endif %}<div class="lr b"><span>BALANCE OWED</span><span>{{ '{:,.2f}'.format(s.owed) }}</span></div>
+  {% else %}<div class="lr"><span>Paid by</span><span>{{ s.payment }}</span></div>{% if s.momo_ref %}<div class="lr"><span>Ref</span><span>{{ s.momo_ref }}</span></div>{% endif %}{% endif %}
+  <div class="hr"></div>
+  {% if s.voided %}<div class="c b">*** CANCELLED ***</div>{% endif %}
+  <div class="c">{{ shop.receipt_footer }}</div>
+</div>
+{% if auto %}<script>addEventListener('load',()=>setTimeout(print,300))</script>{% endif %}
+</body></html>

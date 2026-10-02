@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Staff{% endblock %}
+{% block content %}
+<div class="head"><div><h1>Staff &amp; Permissions</h1><div class="muted">Each person gets their own login. You choose exactly what they can do.</div></div>
+<a class="btn green" href="{{ url_for('staff_form') }}">+ Add staff</a></div>
+<div class="table-wrap"><table><tr><th>Name</th><th>Username</th><th>Role</th><th>Can do</th><th>Status</th><th></th></tr>
+{% for u in users %}<tr class="{{ 'void' if not u.active }}"><td><span class="dot {{ 'on' if u.online }}"></span><b>{{ u.name }}</b></td><td>{{ u.username }}</td><td>{{ u.title }}</td>
+<td class="small">{% if u.role=='owner' %}Everything{% else %}{{ u.perm_list|length }} of {{ PERMS|length }} permissions{% endif %}</td>
+<td>{% if u.online %}<span class="pill green">Online now</span>{% elif u.active %}<span class="small muted">Last seen {{ fmt_dt(u.last_seen) or 'never' }}</span>{% else %}<span class="pill grey">Switched off</span>{% endif %}</td>
+<td>{% if u.role!='owner' %}<a class="btn ghost sm" href="{{ url_for('staff_form', uid=u.id) }}">Edit</a>{% endif %}</td></tr>{% endfor %}</table></div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Staff{% endblock %}
+{% block content %}
+{% set mine = u.perm_list if u else PRESETS['Cashier'] %}
+<p><a href="{{ url_for('staff') }}">← Staff</a></p>
+<h1>{{ 'Edit ' ~ u.name if u else 'Add staff member' }}</h1>
+<form class="card" method="post" style="max-width:860px"><input type="hidden" name="_csrf" value="{{ csrf() }}">
+<div class="grid g3">
+ <div><label>Full name</label><input name="name" value="{{ f.get('name', u.name if u else '') }}" required></div>
+ <div><label>Username (to log in)</label><input name="username" value="{{ f.get('username', u.username if u else '') }}" required placeholder="e.g. ama.{{ shop.name.split(' ')[0]|lower|replace("'",'') }}"></div>
+ <div><label>Phone</label><input name="phone" value="{{ f.get('phone', u.phone if u else '') }}"></div>
+ <div><label>Job title</label><input name="title" list="titles" value="{{ f.get('title', u.title if u else 'Cashier') }}"><datalist id="titles">{% for t in PRESETS %}<option value="{{ t }}">{% endfor %}</datalist></div>
+ <div><label>{{ 'New password (leave empty to keep)' if u else 'Password' }}</label><input name="password" type="text" minlength="6" {{ '' if u else 'required' }} autocomplete="new-password"></div>
+ <div><label>&nbsp;</label><label class="check"><input type="checkbox" name="active" {{ 'checked' if not u or u.active }}> Account is on (can log in)</label></div>
+</div>
+<h2 style="margin-top:18px">What can this person do?</h2>
+<p class="small muted">Quick choose: {% for t, ps in PRESETS.items() %}<button type="button" class="btn ghost sm" onclick='preset({{ ps|tojson }})'>{{ t }}</button> {% endfor %}</p>
+<div class="perm-grid">{% for k, t in PERMS %}<label class="check"><input type="checkbox" name="perm_{{ k }}" value="1" {{ 'checked' if k in mine }}> {{ t }}</label>{% endfor %}</div>
+<div class="row" style="margin-top:16px;flex:0"><button class="btn green">Save</button><a class="btn ghost" href="{{ url_for('staff') }}">Cancel</a>
+{% if u %}<button class="btn red" name="action" value="delete" formnovalidate onclick="return confirm('Remove {{ u.name|e }}? Their past sales stay in reports.')">Remove staff</button>{% endif %}</div>
+</form>
+<script>function preset(ps){document.querySelectorAll('[name^=perm_]').forEach(c=>c.checked=ps.includes(c.name.slice(5)))}</script>
+{% endblock %}
